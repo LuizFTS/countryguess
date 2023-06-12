@@ -1,113 +1,113 @@
-import Image from 'next/image'
+'use client'
+import { useEffect, useState, useRef } from 'react'
+import { countries } from '@/images/countries'
+import { useChronometerContext } from '@/context/ChronometerContext'
 
 export default function Home() {
+  const [name, setName] = useState("")
+  const [rightGuesses, setRightGuesses] = useState([]);
+
+  const countryContainer = useRef()
+
+  // Chronometer context
+  const { startChronometer, stopChronometer, formatTime, isRunning, setIsRunning } = useChronometerContext()
+
+  const handleGuessCountry = (e) => {
+    setName(e.target.value)
+    const anwser = e.target.value.toLowerCase().trim()
+
+    if (!isRunning && e.target.value.length > 0) {
+      startChronometer()
+    }
+
+
+    if (rightGuesses.find(item => {
+      if (item.name === anwser) {
+        return item.name;
+      }
+    }) !== undefined) {
+      return;
+    }
+
+    countries.find(item => {
+      if (item.name === anwser) {
+        setRightGuesses(prevState => {
+          return [...prevState, { name: item.name, id: item.id }]
+        })
+        setName("")
+        console.log({ name: item.name, id: item.id })
+        let guessedCountrySVG = [...countryContainer.current.children].filter(i => {
+          if (parseInt(i.id) === item.id) {
+            return i
+          }
+        })
+        guessedCountrySVG[0].classList = "fill-green-400 hover:fill-green-700 transition"
+
+        return item;
+      }
+    }
+    )
+  }
+
+  // GPT Test zoom
+  const [zoomScale, setZoomScale] = useState(1);
+
+  const handleScroll = (event) => {
+    const scrollDirection = Math.sign(event.deltaY);
+    const newZoomScale = zoomScale + scrollDirection * 0.1; // Adjust the zoom increment/decrement as desired
+
+    // Limit the zoom scale within a certain range (e.g., 0.5 to 3)
+    const clampedZoomScale = Math.min(Math.max(newZoomScale, 0.5), 1.4);
+    setZoomScale(clampedZoomScale);
+  };
+
+  // Stop chronometer when winning
+  useEffect(() => {
+    if (rightGuesses.length === countries.length) {
+      stopChronometer()
+    }
+  }, [rightGuesses, stopChronometer])
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+    <main className='flex min-h-screen'>
+
+      <div className='flex flex-col w-1/3 mx-4 pt-4'>
+        <div className='flex justify-between w-[300px]'>
+          <p className='capitalize'>Países: {rightGuesses.length}/{countries.length}</p>
+          <p>{formatTime()}</p>
         </div>
+        <input type="text" value={name} onChange={(e) => handleGuessCountry(e)} autoFocus className='guessInput w-[300px] border-zinc-500 border-solid border-x border-y px-2 py-1 rounded active:outline-none' placeholder='Digite o nome de um país...' />
+
+        {rightGuesses.length > 0 ? (
+          <ul className='mt-4'>
+            {rightGuesses.map(item => (
+              <li key={item.id} className='capitalize'>{item.name}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>Tente adivinhar o nome dos países!</p>
+        )}
+
+      </div>
+      <div className='flex w-2/3 items-center justify-center' onWheel={handleScroll} >
+
+        <svg height="521" viewBox="0 0 135 221" style={{ transform: `scale(${zoomScale})` }}>
+          <g ref={countryContainer}>
+            {countries.map(country => (
+              <path
+                className='fill-orange-200 hover:fill-orange-300 transition cursor-pointer'
+                id={country.id}
+                d={country.d}
+                key={country.id}
+                stroke="#9C9C9C"
+                strokeWidth="0.3"
+                strokeLinejoin="round" />
+            ))}
+          </g>
+        </svg>
       </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
     </main>
   )
 }
